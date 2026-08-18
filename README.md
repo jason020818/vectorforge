@@ -101,6 +101,38 @@ Zero-norm vectors are defined to have cosine similarity `0` with every vector, i
 
 Same vectors, insertion order, parameters, and seed produce the same graph on a given supported toolchain.
 
+## Phase 3 benchmark runner
+
+Phase 3A infrastructure exists: a runner, an environment preflight, and a
+Markdown renderer. Read
+[docs/PHASE3_BENCHMARK_PROTOCOL.md](docs/PHASE3_BENCHMARK_PROTOCOL.md) before
+using any of it — the fairness rules there are what make a number meaningful.
+
+Install the benchmark extra first:
+
+```bash
+pip install -e ".[bench]"
+```
+
+One smoke run, and the Markdown table for it:
+
+```bash
+python benchmarks/phase3.py --engine all --limit 10000
+python benchmarks/results_to_markdown.py benchmarks/results/<run>/summary.json
+```
+
+`--limit` is what makes that a **smoke** run: a subset for development and
+pipeline validation. Smoke output is labeled `NON-OFFICIAL SMOKE RESULT`, and
+that label is the whole point — smoke numbers must not be quoted as benchmark
+results, reported as a leaderboard, or compared against another engine's
+published figures.
+
+Official mode is a different thing entirely. It requires the full dataset, so
+`--official` rejects `--limit`, demands `--warmup >= 2` and `--repeat >= 5`, and
+runs an environment preflight that will refuse an uncontrolled machine unless
+you pass `--allow-uncontrolled-environment`. **No official comparison has been
+run for this tree yet**, and Phase 3A does not publish one.
+
 ## Project rules
 
 Correctness → Reproducibility → Performance → No Regression.
