@@ -22,7 +22,15 @@ dependencies = ["numpy>=1.24"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.4", "ruff>=0.6"]
-bench = ["pytest>=7.4"]
+bench = [
+    "pytest>=7.4",
+    "h5py>=3.10",
+    "huggingface_hub>=0.24",
+    "psutil>=5.9",
+    "faiss-cpu>=1.8.0",
+    "hnswlib>=0.8.0",
+    "usearch>=2.13",
+]
 
 [project.urls]
 Homepage = "https://github.com/jason020818/vectorforge"
@@ -35,6 +43,8 @@ sdist.include = [
     "include/**",
     "src/**",
     "python/**",
+    "benchmarks/**",
+    "docs/**",
     "CMakeLists.txt",
     "tests/CMakeLists.txt",
 ]
@@ -45,7 +55,7 @@ VECTORFORGE_BUILD_TESTS = "OFF"
 
 [tool.pytest.ini_options]
 testpaths = ["tests/python"]
-pythonpath = ["tests/python"]
+pythonpath = [".", "tests/python"]
 addopts = "-q"
 
 [tool.ruff]

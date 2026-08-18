@@ -1,11 +1,11 @@
-"""hnswlib baseline adapter. Enabled after the HNSW baseline exists."""
+"""Compatibility wrapper for the Phase 3 hnswlib adapter."""
+
+from benchmarks.engines.hnswlib import HnswlibAdapter
 
 
 def available() -> bool:
-    return False
+    return HnswlibAdapter.dependency_available()
 
 
 def build_and_search(*_args, **_kwargs):
-    raise NotImplementedError(
-        "hnswlib comparison is part of the benchmark harness after HNSW (Phase 2+)."
-    )
+    raise NotImplementedError("Use benchmarks.phase3.py / benchmarks.engines.hnswlib instead.")

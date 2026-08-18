@@ -1,11 +1,11 @@
-"""Faiss baseline adapter. Enabled after the HNSW baseline exists."""
+"""Compatibility wrapper for the Phase 3 Faiss adapter."""
+
+from benchmarks.engines.faiss import FaissHnswAdapter
 
 
 def available() -> bool:
-    return False
+    return FaissHnswAdapter.dependency_available()
 
 
 def build_and_search(*_args, **_kwargs):
-    raise NotImplementedError(
-        "Faiss comparison is part of the benchmark harness after HNSW (Phase 2+)."
-    )
+    raise NotImplementedError("Use benchmarks.phase3.py / benchmarks.engines.faiss instead.")

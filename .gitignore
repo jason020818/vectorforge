@@ -36,8 +36,10 @@ compile_commands.json
 
 # Benchmark artifacts (generated)
 /benchmarks/datasets/*.bin
+/benchmarks/datasets/*.hdf5
 /benchmarks/datasets/*.npy
 /benchmarks/datasets/*.fvecs
+/benchmarks/datasets/cache/
 /benchmarks/results/
 /eval/results/
 
