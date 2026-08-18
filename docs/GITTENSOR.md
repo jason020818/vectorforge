@@ -35,5 +35,20 @@ Suggested form values:
 
 - Miners should pick an open issue, keep PRs small, and follow CONTRIBUTING.md
 - Maintainers continue to merge or close PRs. Gittensor never merges for us
-- Self-merged PRs are not scored unless there is external review approval
 - Do not open PERF issues until an official Phase 3B baseline is recorded
+
+## Scoring (current Gittensor rules)
+
+These are the official SN74 distinctions. They are not VectorForge-specific
+policy, and they do not imply a live Gittensor config for this repository.
+
+1. PRs authored by repository maintainers whose GitHub association is
+   `OWNER`, `MEMBER`, or `COLLABORATOR` are ignored for PR-side OSS scoring.
+2. For ordinary non-maintainer miner PRs, a self-merge is rejected unless
+   the PR has at least one external approval.
+3. Maintainer earnings on their own repository, when configured by
+   Gittensor, come through the repository's `maintainer_cut` rather than
+   through PR-side or issue-discovery rewards.
+4. Do not invent a `maintainer_cut` value for VectorForge. VectorForge is
+   not yet registered, so no live repository config exists.
+5. Phase 3B is deferred. There is no official competitor performance claim.
