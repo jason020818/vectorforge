@@ -51,6 +51,32 @@ python eval/recall.py
 
 `pip install` needs a working CMake and C++ compiler on PATH.
 
+### Which extra to install
+
+The optional dependencies are split so the everyday gate stays cheap:
+
+```text
+pip install -e ".[dev]"    # tests, ruff, recall gates
+pip install -e ".[bench]"  # Phase 3 adapters + dataset loader
+```
+
+`.[dev]` is what CI runs for `pytest`, the evaluators, and `ruff`, and it is
+all you need to work on the index itself.
+
+`.[bench]` adds `h5py` and `huggingface_hub` (the VIBE dataset loader),
+`psutil` (RSS measurement), and the competitor engines `faiss-cpu`, `hnswlib`
+and `usearch`. It is only needed to run `benchmarks/phase3.py`.
+
+Competitor libraries stay optional on purpose, so reaching Phase 3 code from a
+`.[dev]` environment raises a named error rather than an opaque `ImportError` —
+for example:
+
+```text
+RuntimeError: h5py is required for VIBE benchmark datasets; install with .[bench]
+```
+
+If you see one of those, install the `bench` extra; nothing is broken.
+
 ## Formatting
 
 C++:

@@ -46,7 +46,8 @@ ctest --test-dir build --output-on-failure
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -U pip
-pip install -e ".[dev]"
+pip install -e ".[dev]"    # tests, ruff, recall gates
+# pip install -e ".[bench]"  # Phase 3 adapters + dataset loader
 pytest
 python eval/correctness.py --metric cosine
 python eval/recall.py
