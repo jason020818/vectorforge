@@ -1,0 +1,57 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "vectorforge"
+version = "0.1.0"
+description = "High-performance ANN retrieval engine with a public performance competition framework"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "VectorForge contributors" }]
+keywords = ["ann", "vector-search", "hnsw", "rag", "embedding"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.6"]
+bench = ["pytest>=7.4"]
+
+[project.urls]
+Homepage = "https://github.com/jason020818/vectorforge"
+Issues = "https://github.com/jason020818/vectorforge/issues"
+
+[tool.scikit-build]
+cmake.version = ">=3.24"
+wheel.packages = []
+sdist.include = [
+    "include/**",
+    "src/**",
+    "python/**",
+    "CMakeLists.txt",
+    "tests/CMakeLists.txt",
+]
+
+[tool.scikit-build.cmake.define]
+VECTORFORGE_BUILD_PYTHON = "ON"
+VECTORFORGE_BUILD_TESTS = "OFF"
+
+[tool.pytest.ini_options]
+testpaths = ["tests/python"]
+pythonpath = ["tests/python"]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+src = ["python", "tests/python", "benchmarks", "eval"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vectorforge", "numpy_ref"]
