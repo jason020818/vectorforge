@@ -66,3 +66,7 @@ ruff format python tests/python eval benchmarks
 ## Clean clone check
 
 From a fresh clone, the commands in the README C++ and Python sections must succeed without extra undocumented steps.
+
+## GitHub Actions
+
+The workflow definition is `ci/github-actions.yml`. It is also the file that belongs at `.github/workflows/ci.yml` so GitHub will run it. Enabling that path requires a Git credential with the `workflow` scope (`gh auth refresh -h github.com -s workflow`).

@@ -18,7 +18,7 @@ VectorForge is not trying to be a full vector database. The two goals are:
 * FlatIndex save/load
 * C++ unit tests (Catch2)
 * Python correctness tests vs NumPy brute-force
-* GitHub Actions CI
+* CI workflow definition (`ci/github-actions.yml`; GitHub Actions enablement is `.github/workflows/ci.yml`)
 
 ## What is explicitly not in this tree yet
 
