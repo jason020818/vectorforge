@@ -88,6 +88,14 @@ def apply_single_thread_env() -> None:
         os.environ[name] = "1"
 
 
+def single_thread_env() -> dict[str, str]:
+    return {name: "1" for name in THREAD_ENV_VARS}
+
+
+def worker_thread_env_snapshot() -> dict[str, str | None]:
+    return _thread_env_snapshot()
+
+
 def collect_environment() -> EnvironmentMetadata:
     warnings: list[str] = []
     is_wsl = _is_wsl()
@@ -144,11 +152,9 @@ def ensure_official_mode_allowed(
         return
     if environment.official_environment_ready:
         return
-    if allow_uncontrolled_environment:
-        return
     raise ValueError(
-        "official mode requires OFFICIAL_ENVIRONMENT_READY=true; rerun without --official or add "
-        "--allow-uncontrolled-environment for an explicitly overridden non-ideal run"
+        "official mode requires OFFICIAL_ENVIRONMENT_READY=true; uncontrolled environments "
+        "may only produce NON-OFFICIAL results"
     )
 
 

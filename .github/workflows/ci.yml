@@ -80,6 +80,38 @@ jobs:
       - name: Ruff
         run: ruff check python tests/python eval benchmarks
 
+  bench-integration:
+    name: Benchmark dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++
+
+      - name: Install benchmark dependencies
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e ".[bench]"
+
+      - name: Benchmark adapter tests
+        env:
+          VECTORFORGE_BENCH_INTEGRATION: "1"
+        run: |
+          pytest \
+            tests/python/test_phase3_results.py \
+            tests/python/test_phase3_dataset.py \
+            tests/python/test_phase3_runner.py \
+            tests/python/test_phase3_engines.py \
+            tests/python/test_phase3_worker.py \
+            tests/python/test_phase3_bench_integration.py
+
   format:
     name: clang-format
     runs-on: ubuntu-latest

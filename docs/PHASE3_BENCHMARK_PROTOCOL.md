@@ -20,6 +20,7 @@ The benchmark adapter must:
 
 - download or locate the canonical file
 - cache it locally
+- compute and verify the actual SHA256 against the expected canonical digest
 - preserve float32 vectors
 - reject malformed or non-finite data
 - record source metadata and dataset identity
@@ -33,7 +34,7 @@ Phase 3A establishes a single-thread baseline because VectorForge Phase 2 constr
 The benchmark runner must therefore:
 
 - request one CPU thread for every engine
-- set relevant thread-control environment variables such as `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, and `OPENBLAS_NUM_THREADS=1`
+- set relevant thread-control environment variables such as `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`, and `OPENBLAS_NUM_THREADS=1` in the subprocess environment before worker Python startup
 - record requested thread count, observable affinity, and environment metadata
 - avoid unsupported claims that a library is single-threaded when that cannot be directly observed
 
@@ -60,7 +61,7 @@ mean over queries(
 
 Canonical ground truth should be used when present and validated.
 
-Subset smoke runs may recompute exact ground truth against the reduced database using `FlatIndex`.
+Subset smoke runs must compute exact ground truth once in a dedicated `FlatIndex` subprocess and persist a shared artifact that every engine worker reads.
 
 ## Warmup and Repetition
 
@@ -96,6 +97,8 @@ Peak RSS must be measured in the isolated engine process. Where practical, recor
 - baseline process RSS
 - post-build RSS
 - peak RSS
+
+For smoke runs that need exact ground truth, that calculation must happen in a separate subprocess so engine `peak RSS` excludes `FlatIndex` oracle work.
 
 Serialized index size must use a real file:
 
@@ -145,6 +148,8 @@ OFFICIAL_ENVIRONMENT_READY = false
 ```
 
 Uncontrolled environments may still run smoke benchmarks.
+
+`--official` must hard fail when `OFFICIAL_ENVIRONMENT_READY` is false. A non-official full-dataset run may be labeled `NON-OFFICIAL / UNCONTROLLED`, but never `OFFICIAL`.
 
 ## Result Schema
 

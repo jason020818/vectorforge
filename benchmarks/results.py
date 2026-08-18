@@ -34,8 +34,9 @@ def recall_at_k(ann_ids: list[list[int]], gt_ids: list[list[int]], k: int) -> fl
 
     hits = 0
     for ann_row, gt_row in zip(ann_ids, gt_ids):
-        truth = set(gt_row[:k])
-        hits += sum(1 for value in ann_row[:k] if value in truth)
+        if len(ann_row) < k or len(gt_row) < k:
+            raise ValueError("each ANN and ground-truth row must contain at least k ids")
+        hits += len(set(ann_row[:k]).intersection(set(gt_row[:k])))
     return hits / float(len(ann_ids) * k)
 
 
@@ -50,6 +51,7 @@ class DatasetMetadata:
     source: str
     source_commit: str | None
     source_sha256: str | None
+    verified_sha256: str | None
     path: str
     split: str
     limit: int | None
@@ -61,6 +63,8 @@ class DatasetMetadata:
     dtype: str
     metric_hint: str
     ground_truth_source: str
+    ground_truth_artifact: str | None
+    ground_truth_k: int
 
 
 @dataclass(slots=True)
@@ -136,6 +140,9 @@ class EngineResult:
     index_size_bytes: int | None
     version: dict[str, str]
     parameters: dict[str, Any]
+    worker_thread_env: dict[str, str | None]
+    effective_threads: str
+    memory_scope: str
     run_label: str
 
     def to_json(self) -> dict[str, Any]:

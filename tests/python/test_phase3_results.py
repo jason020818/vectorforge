@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from benchmarks.results import (
     DatasetMetadata,
     EngineResult,
@@ -22,6 +24,17 @@ def test_recall_at_k_matches_definition() -> None:
     ann = [[0, 2, 3], [3, 4, 5]]
     gt = [[0, 1, 2], [3, 5, 6]]
     assert recall_at_k(ann, gt, 3) == 4.0 / 6.0
+
+
+def test_recall_at_k_deduplicates_ann_ids() -> None:
+    ann = [[5, 5, 5, 6]]
+    gt = [[5, 6, 7, 8]]
+    assert recall_at_k(ann, gt, 4) == 0.5
+
+
+def test_recall_at_k_rejects_short_rows() -> None:
+    with pytest.raises(ValueError, match="at least k ids"):
+        recall_at_k([[1, 2]], [[1, 2, 3]], 3)
 
 
 def test_summary_generation_is_deterministic() -> None:
@@ -49,6 +62,7 @@ def test_summary_generation_is_deterministic() -> None:
         source="hf://datasets/vector-index-bench/vibe/ccnews-nomic-768-normalized.hdf5",
         source_commit="c",
         source_sha256="s",
+        verified_sha256="s",
         path="x",
         split="train/test",
         limit=10000,
@@ -60,6 +74,8 @@ def test_summary_generation_is_deterministic() -> None:
         dtype="float32",
         metric_hint="cosine",
         ground_truth_source="recompute-required",
+        ground_truth_artifact="x/ground_truth.npy",
+        ground_truth_k=100,
     )
     environment = EnvironmentMetadata(
         cpu_model="cpu",
@@ -100,6 +116,9 @@ def test_summary_generation_is_deterministic() -> None:
         index_size_bytes=100,
         version={"vectorforge": "0.1.0"},
         parameters={"M": 16},
+        worker_thread_env={"OMP_NUM_THREADS": "1"},
+        effective_threads="1",
+        memory_scope="isolated engine worker process only; excludes ground-truth subprocess",
         run_label="NON-OFFICIAL SMOKE RESULT",
     )
     a = summarize_results(config, dataset, environment, [result])

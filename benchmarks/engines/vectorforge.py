@@ -15,12 +15,14 @@ class VectorForgeAdapter:
 
     def __init__(self) -> None:
         self.index: HNSWIndex | None = None
+        self._config: BenchmarkAdapterConfig | None = None
 
     @staticmethod
     def dependency_available() -> bool:
         return True
 
     def build(self, vectors: np.ndarray, config: BenchmarkAdapterConfig) -> None:
+        self._config = config
         self.index = HNSWIndex(
             dim=config.dim,
             metric=config.metric,
@@ -52,3 +54,22 @@ class VectorForgeAdapter:
 
     def version_info(self) -> dict[str, str]:
         return {"vectorforge": __version__}
+
+    def actual_parameters(self) -> dict[str, object]:
+        if self.index is None or self._config is None:
+            raise RuntimeError("index has not been built")
+        return {
+            "metric": self._config.metric,
+            "M": self._config.M,
+            "M0": 2 * self._config.M,
+            "efConstruction": self._config.ef_construction,
+            "efSearch": self._config.ef_search,
+            "seed": 42,
+            "dtype": "f32",
+            "threads": self._config.threads,
+        }
+
+    def effective_threads(self) -> str:
+        if self._config is None:
+            raise RuntimeError("index has not been built")
+        return str(self._config.threads)

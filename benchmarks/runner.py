@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import resource
 import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import asdict
 from pathlib import Path
 
 import numpy as np
@@ -16,7 +16,11 @@ from vectorforge import FlatIndex
 
 from benchmarks.datasets import load_vibe_ccnews
 from benchmarks.engines import BenchmarkAdapterConfig, create_engine
-from benchmarks.environment import apply_single_thread_env
+from benchmarks.environment import (
+    apply_single_thread_env,
+    single_thread_env,
+    worker_thread_env_snapshot,
+)
 from benchmarks.results import (
     EngineResult,
     finalize_repeat_metrics,
@@ -86,6 +90,9 @@ def benchmark_engine(
             index_size_bytes=None,
             version={},
             parameters={},
+            worker_thread_env=worker_thread_env_snapshot(),
+            effective_threads="not_available",
+            memory_scope="isolated engine worker process only; excludes ground-truth subprocess",
             run_label=run_label,
         )
 
@@ -155,7 +162,10 @@ def benchmark_engine(
         post_build_rss_bytes=post_build_rss,
         index_size_bytes=index_size,
         version=adapter.version_info(),
-        parameters=asdict(config),
+        parameters=adapter.actual_parameters(),
+        worker_thread_env=worker_thread_env_snapshot(),
+        effective_threads=adapter.effective_threads(),
+        memory_scope="isolated engine worker process only; excludes ground-truth subprocess",
         run_label=run_label,
     )
 
@@ -165,7 +175,12 @@ def run_worker_subprocess(
     engine_name: str,
     worker_payload_path: Path,
     result_path: Path,
+    env_overrides: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.update(single_thread_env())
+    if env_overrides:
+        env.update(env_overrides)
     return subprocess.run(
         [
             sys.executable,
@@ -180,5 +195,30 @@ def run_worker_subprocess(
         ],
         check=False,
         capture_output=True,
+        env=env,
+        text=True,
+    )
+
+
+def run_ground_truth_subprocess(
+    *,
+    payload_path: Path,
+    result_path: Path,
+) -> subprocess.CompletedProcess[str]:
+    env = os.environ.copy()
+    env.update(single_thread_env())
+    return subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "benchmarks.ground_truth_worker",
+            "--payload",
+            str(payload_path),
+            "--result",
+            str(result_path),
+        ],
+        check=False,
+        capture_output=True,
+        env=env,
         text=True,
     )

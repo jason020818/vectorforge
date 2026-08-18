@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.metadata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -36,6 +37,19 @@ class EngineAdapter(Protocol):
     def index_size_bytes(self, path: Path) -> int | None: ...
 
     def version_info(self) -> dict[str, str]: ...
+
+    def actual_parameters(self) -> dict[str, object]: ...
+
+    def effective_threads(self) -> str: ...
+
+
+def package_version(*names: str) -> str:
+    for name in names:
+        try:
+            return importlib.metadata.version(name)
+        except importlib.metadata.PackageNotFoundError:
+            continue
+    return "unknown"
 
 
 def create_engine(name: str) -> EngineAdapter:

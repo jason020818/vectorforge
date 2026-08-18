@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -83,6 +85,61 @@ def _hf_download(target_dir: Path) -> Path:
     return direct_path.resolve()
 
 
+def _sha256_cache_path(path: Path) -> Path:
+    return path.with_suffix(path.suffix + ".sha256.json")
+
+
+def _compute_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        while True:
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _verified_sha256(path: Path) -> str:
+    stat = path.stat()
+    cache_path = _sha256_cache_path(path)
+    cached: dict[str, object] | None = None
+    if cache_path.exists():
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            cached = None
+    if (
+        cached is not None
+        and cached.get("path") == str(path)
+        and cached.get("size") == stat.st_size
+        and cached.get("mtime_ns") == stat.st_mtime_ns
+        and cached.get("sha256") == HF_SOURCE_SHA256
+    ):
+        return str(cached["sha256"])
+
+    actual = _compute_sha256(path)
+    if actual != HF_SOURCE_SHA256:
+        raise ValueError(
+            f"dataset SHA256 mismatch: expected {HF_SOURCE_SHA256}, got {actual}"
+        )
+    cache_path.write_text(
+        json.dumps(
+            {
+                "path": str(path),
+                "size": stat.st_size,
+                "mtime_ns": stat.st_mtime_ns,
+                "sha256": actual,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    return actual
+
+
 def _require_2d_float32(name: str, array: np.ndarray) -> np.ndarray:
     if array.ndim != 2:
         raise ValueError(f"{name} must be a 2D array")
@@ -159,6 +216,7 @@ def load_vibe_ccnews(
 ) -> VibeCcnewsDataset:
     dataset_dir = cache_dir or Path("benchmarks/datasets/cache")
     path = _hf_download(dataset_dir)
+    verified_sha256 = _verified_sha256(path)
 
     (
         vectors,
@@ -197,6 +255,7 @@ def load_vibe_ccnews(
         source=f"hf://datasets/{HF_REPO_ID}/{HF_FILENAME}",
         source_commit=HF_SOURCE_COMMIT,
         source_sha256=HF_SOURCE_SHA256,
+        verified_sha256=verified_sha256,
         path=str(path),
         split="train/test",
         limit=limit,
@@ -208,6 +267,8 @@ def load_vibe_ccnews(
         dtype="float32",
         metric_hint="cosine",
         ground_truth_source=ground_truth_source,
+        ground_truth_artifact=None,
+        ground_truth_k=EXPECTED_GT_K,
     )
     return VibeCcnewsDataset(
         metadata=metadata,

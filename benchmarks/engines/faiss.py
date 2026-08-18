@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 
-from benchmarks.engines.base import BenchmarkAdapterConfig
+from benchmarks.engines.base import BenchmarkAdapterConfig, package_version
 
 
 class FaissHnswAdapter:
@@ -15,6 +15,7 @@ class FaissHnswAdapter:
     def __init__(self) -> None:
         self.index = None
         self._module = None
+        self._config: BenchmarkAdapterConfig | None = None
 
     @staticmethod
     def dependency_available() -> bool:
@@ -32,6 +33,7 @@ class FaissHnswAdapter:
         return self._module
 
     def build(self, vectors: np.ndarray, config: BenchmarkAdapterConfig) -> None:
+        self._config = config
         faiss = self._require()
         faiss.omp_set_num_threads(config.threads)
         metric = faiss.METRIC_L2 if config.metric == "l2" else faiss.METRIC_INNER_PRODUCT
@@ -73,5 +75,25 @@ class FaissHnswAdapter:
         return path.stat().st_size if path.exists() else None
 
     def version_info(self) -> dict[str, str]:
-        module = self._require()
-        return {"faiss": getattr(module, "__version__", "unknown")}
+        return {"faiss-cpu": package_version("faiss-cpu", "faiss")}
+
+    def actual_parameters(self) -> dict[str, object]:
+        if self.index is None or self._config is None:
+            raise RuntimeError("index has not been built")
+        return {
+            "index_type": type(self.index).__name__,
+            "metric_type": "METRIC_L2" if self._config.metric == "l2" else "METRIC_INNER_PRODUCT",
+            "normalization_policy": "l2-normalize queries and vectors for cosine"
+            if self._config.metric == "cosine"
+            else "none",
+            "M": self._config.M,
+            "efConstruction": self._config.ef_construction,
+            "efSearch": self._config.ef_search,
+            "omp_threads": self._config.threads,
+            "dtype": "f32",
+        }
+
+    def effective_threads(self) -> str:
+        if self._config is None:
+            raise RuntimeError("index has not been built")
+        return str(self._config.threads)

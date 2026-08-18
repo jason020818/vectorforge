@@ -19,7 +19,12 @@ from benchmarks.environment import (
     environment_warnings_lines,
 )
 from benchmarks.results import RunConfig, dump_json, summarize_results
-from benchmarks.runner import effective_metric, load_dataset_for_run, run_worker_subprocess
+from benchmarks.runner import (
+    effective_metric,
+    load_dataset_for_run,
+    run_ground_truth_subprocess,
+    run_worker_subprocess,
+)
 
 ENGINES = ("vectorforge", "faiss", "hnswlib", "usearch")
 
@@ -106,7 +111,14 @@ def main() -> int:
             text=True,
         ).stdout.strip()
     )
-    run_label = "OFFICIAL" if args.official else "NON-OFFICIAL SMOKE RESULT"
+    if args.official:
+        run_label = "OFFICIAL"
+    elif args.limit is not None:
+        run_label = "NON-OFFICIAL SMOKE RESULT"
+    elif environment.official_environment_ready:
+        run_label = "NON-OFFICIAL"
+    else:
+        run_label = "NON-OFFICIAL / UNCONTROLLED"
     run_id = f"{args.dataset}-{timestamp}"
     results_dir = args.results_root / run_id
     results_dir.mkdir(parents=True, exist_ok=True)
@@ -130,10 +142,39 @@ def main() -> int:
         timestamp_utc=timestamp,
         results_dir=str(results_dir),
     )
+    ground_truth_artifact = None
+    if dataset.metadata.ground_truth_source == "vibe-canonical" and metric == "cosine":
+        dataset.metadata.ground_truth_source = "vibe-canonical-validated"
+        dataset.metadata.ground_truth_k = max(100, args.k)
+    else:
+        ground_truth_artifact = results_dir / "ground_truth.npy"
+        gt_payload = {
+            "dataset": args.dataset,
+            "limit": args.limit,
+            "official": args.official,
+            "metric": metric,
+            "ground_truth_k": max(100, args.k),
+        }
+        gt_payload_path = results_dir / "ground_truth_payload.json"
+        dump_json(gt_payload_path, gt_payload)
+        gt_proc = run_ground_truth_subprocess(
+            payload_path=gt_payload_path,
+            result_path=ground_truth_artifact,
+        )
+        if gt_proc.returncode != 0:
+            raise SystemExit(gt_proc.stderr or gt_proc.stdout or "ground-truth worker failed")
+        dataset.metadata.ground_truth_source = "flatindex-exact-subprocess"
+        dataset.metadata.ground_truth_artifact = str(ground_truth_artifact)
+        dataset.metadata.ground_truth_k = max(100, args.k)
     dump_json(results_dir / "environment.json", asdict(environment))
     dump_json(results_dir / "dataset.json", asdict(dataset.metadata))
 
-    payload = {"config": asdict(config), "metric": metric, "run_label": run_label}
+    payload = {
+        "config": asdict(config),
+        "metric": metric,
+        "run_label": run_label,
+        "ground_truth_artifact": str(ground_truth_artifact) if ground_truth_artifact else None,
+    }
     payload_path = results_dir / "run_payload.json"
     dump_json(payload_path, payload)
 

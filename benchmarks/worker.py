@@ -6,6 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
+import numpy as np
+
 from benchmarks.results import RunConfig, dump_json
 from benchmarks.runner import benchmark_engine, exact_ground_truth, load_dataset_for_run
 
@@ -22,7 +24,9 @@ def main() -> int:
     dataset = load_dataset_for_run(config.dataset, limit=config.limit, official=config.official)
     metric = payload["metric"]
 
-    if dataset.metadata.ground_truth_source == "vibe-canonical" and metric == "cosine":
+    if payload.get("ground_truth_artifact"):
+        gt_ids = np.load(payload["ground_truth_artifact"])
+    elif dataset.metadata.ground_truth_source == "vibe-canonical" and metric == "cosine":
         gt_ids = dataset.ground_truth_ids
     else:
         gt_ids = exact_ground_truth(dataset.vectors, dataset.queries, metric, config.evaluation_k)
