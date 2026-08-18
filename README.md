@@ -7,7 +7,7 @@ VectorForge is not trying to be a full vector database. The two goals are:
 1. Build a high-performance vector retrieval engine.
 2. Make every performance change automatically reproducible, measurable, and rejectable when it regresses correctness.
 
-**Current status: Phase 2 HNSW baseline.** Exact `FlatIndex` is the ground-truth oracle. `HNSWIndex` is a deterministic, paper-faithful ANN index scored with Recall@K against FlatIndex. This is not a performance-optimized implementation.
+**Current status: Phase 3A complete. Official Phase 3B full-dataset comparison has not been run.** Exact `FlatIndex` is the ground-truth oracle. `HNSWIndex` is a deterministic, paper-faithful ANN index. The Phase 3 harness can compare VectorForge, Faiss, hnswlib, and USearch under matched single-thread conditions. Do not treat smoke numbers as official results.
 
 ## What works now
 
@@ -19,14 +19,16 @@ VectorForge is not trying to be a full vector database. The two goals are:
 * FlatIndex save/load (`VF01`) and HNSW save/load (`VH01`)
 * Reject non-finite input vectors and queries (`NaN`, `+Inf`, `-Inf`)
 * Recall@10 / Recall@100 evaluator vs FlatIndex (`eval/recall.py`)
+* Phase 3A fair benchmark infrastructure (`benchmarks/phase3.py`)
+* Optional competitor extras (`pip install -e ".[bench]"`)
 * C++ unit tests (Catch2) and Python tests
-* CI workflow (`.github/workflows/ci.yml`)
+* CI workflow (`.github/workflows/ci.yml`) plus a separate `.[bench]` job
 
 ## What is explicitly not in this tree yet
 
-SIMD kernels, quantization, GPU, distributed search, REST, real-embedding leaderboards, and competitor performance claims. Empty AVX translation units are placeholders only; they are not used.
+SIMD kernels, quantization, GPU, distributed search, REST, and official competitor performance claims. Empty AVX translation units are placeholders only; they are not used.
 
-Do not read this README as "faster than Faiss / hnswlib / USearch". Those comparisons belong to Phase 3, with measured numbers.
+Do not read this README as "faster than Faiss / hnswlib / USearch". Those comparisons belong to an official Phase 3B run on a controlled native Linux machine.
 
 ## Quick start
 
@@ -113,6 +115,8 @@ A faster search that drops recall, hardcodes a dataset, or weakens tests is a fa
 * [BENCHMARKING.md](BENCHMARKING.md) — how numbers must be produced
 * [PERFORMANCE.md](PERFORMANCE.md) — classification and regression rules
 * [docs/MASTER_SPEC.md](docs/MASTER_SPEC.md) — project-level specification
+* [docs/PHASE3_BENCHMARK_PROTOCOL.md](docs/PHASE3_BENCHMARK_PROTOCOL.md) — Phase 3 fairness rules
+* [docs/GITTENSOR.md](docs/GITTENSOR.md) — SN74 registration checklist
 
 ## License
 

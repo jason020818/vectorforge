@@ -11,8 +11,9 @@ clone → build → tests → benchmark → pick an issue → patch → local ev
 1. Follow [BUILDING.md](BUILDING.md) until C++ tests and `pytest` pass.
 2. Run `python eval/correctness.py` and `python eval/recall.py`.
 3. Pick an issue that states a baseline, a target, and constraints.
-4. Do not start SIMD or competitor-leaderboard work until Phase 2 (HNSW baseline) stays green.
+4. Do not start SIMD or competitor-leaderboard work until Phase 2 (HNSW baseline) stays green and Phase 3A infrastructure remains intact.
 5. Read [docs/MASTER_SPEC.md](docs/MASTER_SPEC.md) and [AGENTS.md](AGENTS.md) before changing architecture or benchmarks.
+6. Prefer an existing open issue. Do not open a duplicate PR for work already assigned or in review.
 
 ## Issue style
 
@@ -36,6 +37,10 @@ All unit tests must pass
 ```
 
 "Make search faster" is not an acceptable issue.
+
+Performance issues that compare against Faiss, hnswlib, or USearch require a recorded official Phase 3B baseline. Until that exists, open correctness, tooling, documentation, or infrastructure issues instead.
+
+Gittensor/SN74 contributors should follow the same rules. See [docs/GITTENSOR.md](docs/GITTENSOR.md).
 
 ## Pull requests
 

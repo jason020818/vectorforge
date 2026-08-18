@@ -46,6 +46,8 @@ reproducibility, not SIMD or competitor QPS.
 
 Real embedding benchmark plus competitor harness under matched conditions.
 
+Phase 3A (infrastructure, smoke, fairness hardening) is complete. Phase 3B is the official full-dataset run on a controlled native Linux machine. It has not started.
+
 ### Phase 4
 
 SIMD optimization, starting from the scalar reference and guarded by
@@ -91,13 +93,15 @@ Implemented:
 
 ## Phase 3 requirements
 
-Not implemented in Phase 1. Specification only:
+Phase 3A is implemented:
 
-* one public real embedding dataset first
+* one public real embedding dataset: VIBE `ccnews-nomic-768-normalized`
 * matched conditions across engines (dataset, queries, metric, top-k, threads, warmup, repetitions)
-* baseline adapters for Faiss, hnswlib, and USearch
-* VIBE-compatible direction after the evaluator is stable
+* baseline adapters for VectorForge, Faiss, hnswlib, and USearch
 * reported fields: QPS, P50, P95, P99, peak RAM, build time, serialized index size, plus recall
+* official mode hard-fails unless `OFFICIAL_ENVIRONMENT_READY=true`
+
+Phase 3B is the official full-dataset comparison. It is not complete until a native Linux run records `run_label = OFFICIAL`.
 
 ## Anti-gaming rules
 
