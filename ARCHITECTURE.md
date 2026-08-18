@@ -32,7 +32,7 @@ Phase 1 hardening rules:
 
 * `FlatIndex` rejects non-finite values on `add`, `search`, and `search_batch`
 * size arithmetic is checked before allocation or copy
-* `VF01` loads validate header fields, payload size, and finite vector values before committing state
+* `VF01` loads validate header fields, exact payload length, and finite vector values before committing state. Trailing bytes after the expected vector payload are invalid.
 
 ## Serialization
 
@@ -46,6 +46,8 @@ u32 metric (0=L2, 1=cosine)
 u64 n
 float32 vectors[n * dim]
 ```
+
+The file ends after those vectors. Extra trailing bytes are rejected. A later format must use a new version, not VF01 extensions.
 
 ## Next phase
 

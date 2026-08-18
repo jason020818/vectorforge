@@ -71,7 +71,8 @@ compatibility justification in the PR, not a silent edit:
 * equal distances break ties toward the smaller id
 * when `k > N`, unused slots are `id = -1` and `distance = +inf`
 * `add`, `search`, `search_batch`, and `load` reject non-finite values (`NaN`, `+Inf`, `-Inf`)
-* VF01 loads validate magic, kind, dim, metric, size arithmetic, payload length, and finite vector values, and do not commit object state on failure
+* VF01 loads validate magic, kind, dim, metric, size arithmetic, exact payload length, and finite vector values, and do not commit object state on failure
+* VF01 payload length must match exactly. Trailing bytes are invalid. Future serialization extensions must use a separately specified version or format rather than unknown trailing data.
 
 ## Phase 2 requirements
 

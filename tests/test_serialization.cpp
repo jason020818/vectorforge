@@ -205,3 +205,59 @@ TEST_CASE("failed load preserves existing index state", "[serialization][safety]
     REQUIRE_THAT(after.distances[1], Catch::Matchers::WithinAbs(before.distances[1], 0.0f));
     std::filesystem::remove(path);
 }
+
+TEST_CASE("load rejects one extra trailing byte", "[serialization][validation]") {
+    const std::filesystem::path path = temp_file("vectorforge_trailing_byte.bin");
+    const float payload[] = {1.0f, 2.0f};
+    write_vf01_payload(path, 2, 0, 1, payload, 2);
+    {
+        std::ofstream out(path, std::ios::binary | std::ios::app);
+        const char extra = 0x7f;
+        out.write(&extra, 1);
+    }
+    FlatIndex index(2, "l2");
+    REQUIRE_THROWS_AS(index.load(path.string()), std::runtime_error);
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("load rejects extra trailing float", "[serialization][validation]") {
+    const std::filesystem::path path = temp_file("vectorforge_trailing_float.bin");
+    const float payload[] = {1.0f, 2.0f};
+    write_vf01_payload(path, 2, 0, 1, payload, 2);
+    {
+        std::ofstream out(path, std::ios::binary | std::ios::app);
+        const float extra = 3.0f;
+        out.write(reinterpret_cast<const char*>(&extra), sizeof(extra));
+    }
+    FlatIndex index(2, "l2");
+    REQUIRE_THROWS_AS(index.load(path.string()), std::runtime_error);
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("failed load of trailing data preserves existing index state",
+          "[serialization][safety]") {
+    FlatIndex index(2, "l2");
+    const float data[] = {0.0f, 0.0f, 3.0f, 4.0f};
+    index.add(data, 2);
+    const float query[] = {0.0f, 0.0f};
+    const auto before = index.search(query, 2);
+
+    const std::filesystem::path path = temp_file("vectorforge_trailing_preserves.bin");
+    const float payload[] = {1.0f, 2.0f};
+    write_vf01_payload(path, 2, 1, 1, payload, 2);
+    {
+        std::ofstream out(path, std::ios::binary | std::ios::app);
+        const char extra = 0x01;
+        out.write(&extra, 1);
+    }
+    REQUIRE_THROWS_AS(index.load(path.string()), std::runtime_error);
+
+    REQUIRE(index.dim() == 2);
+    REQUIRE(index.metric() == vectorforge::Metric::L2);
+    REQUIRE(index.size() == 2);
+    const auto after = index.search(query, 2);
+    REQUIRE(after.ids == before.ids);
+    REQUIRE_THAT(after.distances[0], Catch::Matchers::WithinAbs(before.distances[0], 0.0f));
+    REQUIRE_THAT(after.distances[1], Catch::Matchers::WithinAbs(before.distances[1], 0.0f));
+    std::filesystem::remove(path);
+}

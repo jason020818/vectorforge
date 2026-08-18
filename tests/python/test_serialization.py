@@ -46,3 +46,16 @@ def test_load_rejects_truncated_payload(tmp_path: Path) -> None:
     index = FlatIndex(dim=2, metric="l2")
     with pytest.raises(RuntimeError):
         index.load(os.fspath(path))
+
+
+def test_load_rejects_trailing_byte(tmp_path: Path) -> None:
+    path = tmp_path / "trailing.bin"
+    payload = np.array([1.0, 2.0], dtype=np.float32).tobytes()
+    path.write_bytes(b"VF01" + struct.pack("<IIIQ", 1, 2, 0, 1) + payload + b"\x00")
+    index = FlatIndex(dim=2, metric="l2")
+    index.add(np.array([[0.0, 0.0]], dtype=np.float32))
+    with pytest.raises(RuntimeError):
+        index.load(os.fspath(path))
+    assert index.dim == 2
+    assert index.metric == "l2"
+    assert index.ntotal == 1

@@ -256,8 +256,11 @@ void FlatIndex::load(const std::string& path) {
     const std::size_t payload_bytes =
         checked_mul(element_count, sizeof(float), "serialized vector bytes");
     const std::size_t remaining_bytes = file_size - payload_offset;
-    if (payload_bytes > remaining_bytes) {
-        throw std::runtime_error("invalid VectorForge index file: truncated vectors");
+    if (remaining_bytes < payload_bytes) {
+        throw std::runtime_error("invalid VectorForge index file: truncated payload");
+    }
+    if (remaining_bytes > payload_bytes) {
+        throw std::runtime_error("invalid VectorForge index file: unexpected trailing data");
     }
 
     std::vector<float> loaded_vectors(element_count, 0.0f);
@@ -265,7 +268,7 @@ void FlatIndex::load(const std::string& path) {
         in.read(reinterpret_cast<char*>(loaded_vectors.data()),
                 static_cast<std::streamsize>(payload_bytes));
         if (!in) {
-            throw std::runtime_error("invalid VectorForge index file: truncated vectors");
+            throw std::runtime_error("invalid VectorForge index file: truncated payload");
         }
     }
 

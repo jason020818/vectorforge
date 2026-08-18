@@ -15,7 +15,7 @@ VectorForge is not trying to be a full vector database. The two goals are:
 * Python package (`pip install -e .`)
 * Scalar FP32 exact search: L2 and cosine
 * Single-query and batch search
-* FlatIndex save/load
+* FlatIndex save/load (`VF01`; exact payload length, no trailing bytes)
 * Reject non-finite input vectors and queries (`NaN`, `+Inf`, `-Inf`)
 * C++ unit tests (Catch2)
 * Python correctness tests vs NumPy brute-force
