@@ -12,6 +12,7 @@ clone → build → tests → benchmark → pick an issue → patch → local ev
 2. Run `python eval/correctness.py` (and, after HNSW exists, the performance harness).
 3. Pick an issue that states a baseline, a target, and constraints.
 4. Do not start HNSW or SIMD work until Phase 1 (exact FlatIndex) stays green.
+5. Read [docs/MASTER_SPEC.md](docs/MASTER_SPEC.md) and [AGENTS.md](AGENTS.md) before changing architecture or benchmarks.
 
 ## Issue style
 
@@ -43,6 +44,7 @@ All unit tests must pass
 * Do not claim benchmark numbers you did not run.
 * Do not special-case a dataset id.
 * If you change a distance kernel, add/keep a scalar vs new-kernel correctness test.
+* If you change Phase 1 semantics, explain the compatibility impact before implementation.
 
 CI must pass Debug and Release C++ tests plus Python correctness tests.
 

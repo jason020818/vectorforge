@@ -67,6 +67,8 @@ ruff format python tests/python eval benchmarks
 
 From a fresh clone, the commands in the README C++ and Python sections must succeed without extra undocumented steps.
 
+Before substantial changes, agents should read `docs/MASTER_SPEC.md` and `AGENTS.md` in addition to the build and architecture docs.
+
 ## GitHub Actions
 
 The workflow definition is `ci/github-actions.yml`. It is also the file that belongs at `.github/workflows/ci.yml` so GitHub will run it. Enabling that path requires a Git credential with the `workflow` scope (`gh auth refresh -h github.com -s workflow`).

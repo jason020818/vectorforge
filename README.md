@@ -16,6 +16,7 @@ VectorForge is not trying to be a full vector database. The two goals are:
 * Scalar FP32 exact search: L2 and cosine
 * Single-query and batch search
 * FlatIndex save/load
+* Reject non-finite input vectors and queries (`NaN`, `+Inf`, `-Inf`)
 * C++ unit tests (Catch2)
 * Python correctness tests vs NumPy brute-force
 * CI workflow definition (`ci/github-actions.yml`; GitHub Actions enablement is `.github/workflows/ci.yml`)
@@ -68,7 +69,7 @@ ids, distances = index.search(queries, k=10)
 | `l2`     | Euclidean L2      | smaller      |
 | `cosine` | `1 - cosine_similarity` | smaller |
 
-Zero-norm vectors are defined to have cosine similarity `0` with every vector, including other zeros. That matches the NumPy reference in `tests/python/numpy_ref.py`. Ties break toward the smaller id.
+Zero-norm vectors are defined to have cosine similarity `0` with every vector, including other zeros. That matches the NumPy reference in `tests/python/numpy_ref.py`. Ties break toward the smaller id. Non-finite values are rejected instead of being searched or serialized into the oracle.
 
 ## Project rules
 
@@ -83,6 +84,7 @@ A faster search that drops recall, hardcodes a dataset, or weakens tests is a fa
 * [ARCHITECTURE.md](ARCHITECTURE.md) — layout and current components
 * [BENCHMARKING.md](BENCHMARKING.md) — how numbers must be produced
 * [PERFORMANCE.md](PERFORMANCE.md) — classification and regression rules
+* [docs/MASTER_SPEC.md](docs/MASTER_SPEC.md) — project-level specification
 
 ## License
 

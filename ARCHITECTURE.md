@@ -28,6 +28,12 @@ Top-k uses a bounded max-heap. Ordering is `(distance ascending, id ascending)`.
 
 Cosine distance is `1 - dot(a,b) / (||a|| ||b||)` with similarity defined as `0` when either norm is 0. Accumulators are float64, then stored as float32, matching `tests/python/numpy_ref.py`.
 
+Phase 1 hardening rules:
+
+* `FlatIndex` rejects non-finite values on `add`, `search`, and `search_batch`
+* size arithmetic is checked before allocation or copy
+* `VF01` loads validate header fields and payload size before allocation
+
 ## Serialization
 
 File format `VF01` (little-endian, Linux x86-64):

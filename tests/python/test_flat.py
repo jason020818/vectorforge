@@ -92,6 +92,32 @@ def test_malformed_dimensions_raise() -> None:
         index.search(np.zeros(5, dtype=np.float32), k=1)
 
 
+@pytest.mark.parametrize("metric", ["l2", "cosine"])
+def test_non_finite_vectors_raise(metric: str) -> None:
+    index = FlatIndex(dim=2, metric=metric)
+    for bad in (
+        np.array([[0.0, np.nan]], dtype=np.float32),
+        np.array([[0.0, np.inf]], dtype=np.float32),
+        np.array([[0.0, -np.inf]], dtype=np.float32),
+    ):
+        with pytest.raises(ValueError):
+            index.add(bad)
+
+
+@pytest.mark.parametrize("metric", ["l2", "cosine"])
+def test_non_finite_queries_raise(metric: str) -> None:
+    index = FlatIndex(dim=2, metric=metric)
+    index.add(np.array([[0.0, 0.0], [1.0, 1.0]], dtype=np.float32))
+    for bad in (
+        np.array([0.0, np.nan], dtype=np.float32),
+        np.array([0.0, np.inf], dtype=np.float32),
+        np.array([0.0, -np.inf], dtype=np.float32),
+        np.array([[0.0, 0.0], [np.nan, 1.0]], dtype=np.float32),
+    ):
+        with pytest.raises(ValueError):
+            index.search(bad, k=1)
+
+
 def test_batch_matches_row_wise_search() -> None:
     dim = 12
     db = rng.standard_normal((30, dim), dtype=np.float32)

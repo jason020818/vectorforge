@@ -3,8 +3,11 @@
 #include "vectorforge/distance.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
+#include <ios>
 #include <limits>
 #include <queue>
 #include <stdexcept>
@@ -38,6 +41,36 @@ void require_positive_dim(dim_t dim) {
     }
 }
 
+std::size_t checked_mul(std::size_t a, std::size_t b, const char* what) {
+    if (a != 0 && b > std::numeric_limits<std::size_t>::max() / a) {
+        throw std::overflow_error(std::string(what) + " overflow");
+    }
+    return a * b;
+}
+
+std::size_t checked_add(std::size_t a, std::size_t b, const char* what) {
+    if (b > std::numeric_limits<std::size_t>::max() - a) {
+        throw std::overflow_error(std::string(what) + " overflow");
+    }
+    return a + b;
+}
+
+void validate_finite_block(const float* values, std::size_t count, const char* what) {
+    for (std::size_t i = 0; i < count; ++i) {
+        if (!std::isfinite(values[i])) {
+            throw std::invalid_argument(std::string(what) + " contains non-finite values");
+        }
+    }
+}
+
+std::size_t current_stream_pos(std::ifstream& in) {
+    const std::ifstream::pos_type pos = in.tellg();
+    if (pos == std::ifstream::pos_type(-1)) {
+        throw std::runtime_error("failed to inspect index file position");
+    }
+    return static_cast<std::size_t>(pos);
+}
+
 }  // namespace
 
 FlatIndex::FlatIndex(dim_t dim, Metric metric) : dim_(dim), metric_(metric), n_(0) {
@@ -53,12 +86,14 @@ void FlatIndex::add(const float* vectors, std::size_t n) {
     if (vectors == nullptr) {
         throw std::invalid_argument("vectors pointer is null");
     }
+    const std::size_t dim = static_cast<std::size_t>(dim_);
+    const std::size_t incoming = checked_mul(n, dim, "vector count * dim");
     const std::size_t old = vectors_.size();
-    vectors_.resize(old + n * static_cast<std::size_t>(dim_));
-    std::copy(vectors,
-              vectors + n * static_cast<std::size_t>(dim_),
-              vectors_.begin() + static_cast<std::ptrdiff_t>(old));
-    n_ += n;
+    const std::size_t total = checked_add(old, incoming, "existing vectors + new vectors");
+    validate_finite_block(vectors, incoming, "input vectors");
+    vectors_.resize(total);
+    std::copy(vectors, vectors + incoming, vectors_.begin() + static_cast<std::ptrdiff_t>(old));
+    n_ = checked_add(n_, n, "index size");
 }
 
 void FlatIndex::search_one(const float* query, int k, idx_t* ids_out, float* distances_out) const {
@@ -71,6 +106,7 @@ void FlatIndex::search_one(const float* query, int k, idx_t* ids_out, float* dis
     if (ids_out == nullptr || distances_out == nullptr) {
         throw std::invalid_argument("output pointers are null");
     }
+    validate_finite_block(query, static_cast<std::size_t>(dim_), "query");
 
     const int k_out = k;
     for (int i = 0; i < k_out; ++i) {
@@ -126,6 +162,9 @@ void FlatIndex::search_batch(
     if (ids_out == nullptr || distances_out == nullptr) {
         throw std::invalid_argument("output pointers are null");
     }
+    const std::size_t total_queries =
+        checked_mul(nq, static_cast<std::size_t>(dim_), "query count * dim");
+    validate_finite_block(queries, total_queries, "queries");
     for (std::size_t q = 0; q < nq; ++q) {
         const float* query = queries + q * static_cast<std::size_t>(dim_);
         search_one(query,
@@ -157,8 +196,10 @@ void FlatIndex::save(const std::string& path) const {
     out.write(reinterpret_cast<const char*>(&metric), sizeof(metric));
     out.write(reinterpret_cast<const char*>(&n), sizeof(n));
     if (n_ > 0) {
+        const std::size_t bytes =
+            checked_mul(vectors_.size(), sizeof(float), "serialized vector bytes");
         out.write(reinterpret_cast<const char*>(vectors_.data()),
-                  static_cast<std::streamsize>(vectors_.size() * sizeof(float)));
+                  static_cast<std::streamsize>(bytes));
     }
     if (!out) {
         throw std::runtime_error("failed while writing '" + path + "'");
@@ -196,17 +237,42 @@ void FlatIndex::load(const std::string& path) {
     if (metric > 1u) {
         throw std::runtime_error("invalid metric in index file");
     }
-    dim_ = static_cast<dim_t>(dim);
-    metric_ = metric == 0u ? Metric::L2 : Metric::Cosine;
-    n_ = static_cast<std::size_t>(n);
-    vectors_.assign(n_ * static_cast<std::size_t>(dim_), 0.0f);
-    if (n_ > 0) {
-        in.read(reinterpret_cast<char*>(vectors_.data()),
-                static_cast<std::streamsize>(vectors_.size() * sizeof(float)));
+
+    const std::uint64_t max_size_t =
+        static_cast<std::uint64_t>(std::numeric_limits<std::size_t>::max());
+    if (n > max_size_t) {
+        throw std::runtime_error("invalid vector count in index file");
+    }
+
+    const std::size_t file_size = static_cast<std::size_t>(std::filesystem::file_size(path));
+    const std::size_t payload_offset = current_stream_pos(in);
+    if (payload_offset > file_size) {
+        throw std::runtime_error("invalid VectorForge index file: header past EOF");
+    }
+
+    const std::size_t dim_size = static_cast<std::size_t>(dim);
+    const std::size_t n_size = static_cast<std::size_t>(n);
+    const std::size_t element_count = checked_mul(n_size, dim_size, "serialized vector count");
+    const std::size_t payload_bytes =
+        checked_mul(element_count, sizeof(float), "serialized vector bytes");
+    const std::size_t remaining_bytes = file_size - payload_offset;
+    if (payload_bytes > remaining_bytes) {
+        throw std::runtime_error("invalid VectorForge index file: truncated vectors");
+    }
+
+    std::vector<float> loaded_vectors(element_count, 0.0f);
+    if (n_size > 0) {
+        in.read(reinterpret_cast<char*>(loaded_vectors.data()),
+                static_cast<std::streamsize>(payload_bytes));
         if (!in) {
             throw std::runtime_error("invalid VectorForge index file: truncated vectors");
         }
     }
+
+    dim_ = static_cast<dim_t>(dim);
+    metric_ = metric == 0u ? Metric::L2 : Metric::Cosine;
+    n_ = n_size;
+    vectors_ = std::move(loaded_vectors);
 }
 
 }  // namespace vectorforge

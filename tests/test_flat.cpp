@@ -3,6 +3,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cmath>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
@@ -34,6 +35,50 @@ TEST_CASE("unknown metric is rejected", "[flat]") {
 TEST_CASE("malformed add is rejected", "[flat]") {
     FlatIndex index(2, "l2");
     REQUIRE_THROWS_AS(index.add(nullptr, 1), std::invalid_argument);
+}
+
+TEST_CASE("non-finite vectors are rejected on add", "[flat][validation]") {
+    for (const auto metric : {"l2", "cosine"}) {
+        FlatIndex index(2, metric);
+        std::vector<float> with_nan{0.0f, std::numeric_limits<float>::quiet_NaN()};
+        std::vector<float> with_pos_inf{0.0f, std::numeric_limits<float>::infinity()};
+        std::vector<float> with_neg_inf{0.0f, -std::numeric_limits<float>::infinity()};
+        REQUIRE_THROWS_AS(index.add(with_nan.data(), 1), std::invalid_argument);
+        REQUIRE_THROWS_AS(index.add(with_pos_inf.data(), 1), std::invalid_argument);
+        REQUIRE_THROWS_AS(index.add(with_neg_inf.data(), 1), std::invalid_argument);
+    }
+}
+
+TEST_CASE("non-finite queries are rejected", "[flat][validation]") {
+    for (const auto metric : {"l2", "cosine"}) {
+        FlatIndex index(2, metric);
+        const float data[] = {0.0f, 0.0f, 1.0f, 1.0f};
+        index.add(data, 2);
+
+        std::vector<float> with_nan{0.0f, std::numeric_limits<float>::quiet_NaN()};
+        std::vector<float> with_pos_inf{0.0f, std::numeric_limits<float>::infinity()};
+        std::vector<float> with_neg_inf{0.0f, -std::numeric_limits<float>::infinity()};
+        REQUIRE_THROWS_AS(index.search(with_nan.data(), 1), std::invalid_argument);
+        REQUIRE_THROWS_AS(index.search(with_pos_inf.data(), 1), std::invalid_argument);
+        REQUIRE_THROWS_AS(index.search(with_neg_inf.data(), 1), std::invalid_argument);
+    }
+}
+
+TEST_CASE("batch search rejects non-finite queries", "[flat][validation][batch]") {
+    FlatIndex index(2, "l2");
+    const float data[] = {0.0f, 0.0f, 1.0f, 1.0f};
+    index.add(data, 2);
+
+    std::vector<float> queries{
+        0.0f,
+        0.0f,
+        std::numeric_limits<float>::quiet_NaN(),
+        1.0f,
+    };
+    std::vector<idx_t> ids(4, -1);
+    std::vector<float> dists(4, 0.0f);
+    REQUIRE_THROWS_AS(index.search_batch(queries.data(), 2, 2, ids.data(), dists.data()),
+                      std::invalid_argument);
 }
 
 TEST_CASE("L2 k=1 returns the nearest neighbor", "[flat][l2]") {
@@ -137,4 +182,19 @@ TEST_CASE("empty index returns padded results", "[flat]") {
     const auto result = index.search(query, 2);
     REQUIRE(result.ids[0] == -1);
     REQUIRE(result.ids[1] == -1);
+}
+
+TEST_CASE("add rejects multiplication overflow before allocation", "[flat][overflow]") {
+    FlatIndex index(2, "l2");
+    const float one = 1.0f;
+    const std::size_t huge_n = std::numeric_limits<std::size_t>::max() / 2 + 1;
+    REQUIRE_THROWS_AS(index.add(&one, huge_n), std::overflow_error);
+}
+
+TEST_CASE("add rejects addition overflow before allocation", "[flat][overflow]") {
+    FlatIndex index(1, "l2");
+    const float value = 0.0f;
+    index.add(&value, 1);
+    const std::size_t huge_n = std::numeric_limits<std::size_t>::max();
+    REQUIRE_THROWS_AS(index.add(&value, huge_n), std::overflow_error);
 }
