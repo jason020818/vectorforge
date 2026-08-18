@@ -21,6 +21,7 @@ include(GNUInstallDirs)
 add_library(vectorforge
     src/distance/scalar.cpp
     src/index/flat_index.cpp
+    src/index/hnsw_index.cpp
     src/distance/avx2.cpp
     src/distance/avx512.cpp
 )

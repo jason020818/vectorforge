@@ -45,6 +45,8 @@ pip install -e ".[dev]"
 python -c "from vectorforge import FlatIndex; print(FlatIndex)"
 pytest
 ruff check python tests/python eval benchmarks
+python eval/correctness.py --metric cosine
+python eval/recall.py
 ```
 
 `pip install` needs a working CMake and C++ compiler on PATH.

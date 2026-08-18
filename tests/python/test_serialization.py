@@ -40,9 +40,7 @@ def test_load_rejects_invalid_metric(tmp_path: Path) -> None:
 def test_load_rejects_truncated_payload(tmp_path: Path) -> None:
     path = tmp_path / "truncated_payload.bin"
     payload = np.array([1.0, 2.0], dtype=np.float32).tobytes()
-    path.write_bytes(
-        b"VF01" + struct.pack("<IIIQ", 1, 2, 0, 2) + payload
-    )
+    path.write_bytes(b"VF01" + struct.pack("<IIIQ", 1, 2, 0, 2) + payload)
     index = FlatIndex(dim=2, metric="l2")
     with pytest.raises(RuntimeError):
         index.load(os.fspath(path))

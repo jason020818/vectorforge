@@ -71,6 +71,9 @@ jobs:
           python eval/correctness.py --metric l2
           python eval/correctness.py --metric cosine
 
+      - name: HNSW recall evaluator
+        run: python eval/recall.py
+
       - name: Ruff
         run: ruff check python tests/python eval benchmarks
 

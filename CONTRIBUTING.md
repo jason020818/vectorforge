@@ -9,9 +9,9 @@ clone → build → tests → benchmark → pick an issue → patch → local ev
 ```
 
 1. Follow [BUILDING.md](BUILDING.md) until C++ tests and `pytest` pass.
-2. Run `python eval/correctness.py` (and, after HNSW exists, the performance harness).
+2. Run `python eval/correctness.py` and `python eval/recall.py`.
 3. Pick an issue that states a baseline, a target, and constraints.
-4. Do not start HNSW or SIMD work until Phase 1 (exact FlatIndex) stays green.
+4. Do not start SIMD or competitor-leaderboard work until Phase 2 (HNSW baseline) stays green.
 5. Read [docs/MASTER_SPEC.md](docs/MASTER_SPEC.md) and [AGENTS.md](AGENTS.md) before changing architecture or benchmarks.
 
 ## Issue style

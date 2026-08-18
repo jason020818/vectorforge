@@ -37,7 +37,10 @@ and the input-validation rules that future ANN implementations must preserve.
 
 ### Phase 2
 
-HNSW baseline. This begins only after Phase 1 is frozen and repeatably green.
+Deterministic paper-faithful `HNSWIndex` baseline (`M`, `efConstruction`, `efSearch`, seed),
+L2 and cosine, batch search, `VH01` save/load, and Recall@10 / Recall@100 against
+FlatIndex on a documented synthetic set. This phase is correctness and
+reproducibility, not SIMD or competitor QPS.
 
 ### Phase 3
 
@@ -76,15 +79,15 @@ compatibility justification in the PR, not a silent edit:
 
 ## Phase 2 requirements
 
-Not implemented in Phase 1. Specification only:
+Implemented:
 
 * `HNSWIndex`
-* parameters `M`, `efConstruction`, `efSearch`
-* deterministic / reproducible construction policy
-* L2 and cosine
+* parameters `M`, `efConstruction`, `efSearch`, `seed`
+* deterministic construction via seeded `std::mt19937_64` level generation
+* L2 and cosine (same kernels as FlatIndex)
 * batch search
-* save / load
-* Recall@10 and Recall@100 against FlatIndex ground truth
+* `VH01` save / load
+* Recall@10 and Recall@100 against FlatIndex ground truth (`eval/recall.py`)
 
 ## Phase 3 requirements
 

@@ -1,8 +1,8 @@
 """VectorForge — CPU ANN retrieval engine.
 
-Phase 0/1 exposes exact FlatIndex only. HNSW is intentionally not imported yet.
+Phase 2 exposes exact FlatIndex and a deterministic HNSW baseline.
 """
 
-from vectorforge._vectorforge import FlatIndex, __version__
+from vectorforge._vectorforge import FlatIndex, HNSWIndex, __version__
 
-__all__ = ["FlatIndex", "__version__"]
+__all__ = ["FlatIndex", "HNSWIndex", "__version__"]

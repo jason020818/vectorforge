@@ -1,6 +1,6 @@
 """Correctness evaluator: FlatIndex vs NumPy brute-force.
 
-This is the Phase 1 gate. ANN recall scoring against FlatIndex comes after HNSW.
+This is the Phase 1 gate. ANN recall scoring against FlatIndex is `eval/recall.py`.
 """
 
 from __future__ import annotations

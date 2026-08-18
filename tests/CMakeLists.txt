@@ -2,6 +2,8 @@ add_executable(vectorforge_tests
     test_distance.cpp
     test_flat.cpp
     test_serialization.cpp
+    test_hnsw.cpp
+    test_hnsw_serialization.cpp
 )
 
 target_link_libraries(vectorforge_tests
@@ -15,4 +17,4 @@ if(NOT MSVC)
 endif()
 
 include(Catch)
-catch_discover_tests(vectorforge_tests)
+catch_discover_tests(vectorforge_tests PROPERTIES TIMEOUT 300)

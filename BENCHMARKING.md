@@ -4,17 +4,18 @@
 
 A number that was not produced by a command in this repository, on a named commit, is not a project result. Do not paste guessed QPS into README, issues, or PRs.
 
-## Phase 0/1
+## Phase 0/1/2
 
 The only honest measurements today are:
 
 * unit tests pass / fail
 * NumPy vs FlatIndex id agreement
+* HNSW vs FlatIndex Recall@10 / Recall@100 on the documented synthetic set
 * optional local `python benchmarks/benchmark.py` micro-timings for sanity
 
 `benchmarks/benchmark.py` prints a median over repeats. Those timings are **not** a published claim and must not be copied into README.
 
-Competitor adapters (`faiss`, `hnswlib`, `usearch`) raise `NotImplementedError` until HNSW exists. Comparing exact scan to graph indexes would not be a fair harness.
+Competitor adapters (`faiss`, `hnswlib`, `usearch`) raise `NotImplementedError` until the Phase 3 harness exists. Do not treat a local HNSW micro-timing as a leaderboard result.
 
 ## After HNSW
 
