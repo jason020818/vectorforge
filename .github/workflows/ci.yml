@@ -44,14 +44,21 @@ jobs:
         run: ctest --test-dir build --output-on-failure
 
   python:
-    name: Python package
+    name: Python package (${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # requires-python is >=3.10, so the lightweight gate runs on the
+        # oldest supported interpreter as well as the newest. Phase 3B stays
+        # on 3.12 in bench-integration below.
+        python-version: ["3.10", "3.12"]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
       - name: Install toolchain
         run: |
