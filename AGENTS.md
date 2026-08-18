@@ -1,5 +1,9 @@
 # VectorForge Agent Rules
 
+`docs/MASTER_SPEC.md` is the top-level specification. If implementation convenience
+conflicts with MASTER_SPEC, MASTER_SPEC wins unless the maintainer explicitly
+changes the specification.
+
 Before modifying VectorForge:
 
 1. Read `docs/MASTER_SPEC.md`.

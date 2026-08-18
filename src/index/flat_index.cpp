@@ -269,6 +269,8 @@ void FlatIndex::load(const std::string& path) {
         }
     }
 
+    validate_finite_block(loaded_vectors.data(), element_count, "serialized vectors");
+
     dim_ = static_cast<dim_t>(dim);
     metric_ = metric == 0u ? Metric::L2 : Metric::Cosine;
     n_ = n_size;

@@ -32,7 +32,7 @@ Phase 1 hardening rules:
 
 * `FlatIndex` rejects non-finite values on `add`, `search`, and `search_batch`
 * size arithmetic is checked before allocation or copy
-* `VF01` loads validate header fields and payload size before allocation
+* `VF01` loads validate header fields, payload size, and finite vector values before committing state
 
 ## Serialization
 

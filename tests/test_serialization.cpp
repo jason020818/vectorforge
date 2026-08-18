@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -28,6 +29,21 @@ void write_raw_header(std::ofstream& out,
 
 std::filesystem::path temp_file(const char* name) {
     return std::filesystem::temp_directory_path() / name;
+}
+
+void write_vf01_payload(const std::filesystem::path& path,
+                        std::uint32_t dim,
+                        std::uint32_t metric,
+                        std::uint64_t n,
+                        const float* payload,
+                        std::size_t payload_floats) {
+    std::ofstream out(path, std::ios::binary);
+    const char magic[4] = {'V', 'F', '0', '1'};
+    write_raw_header(out, magic, 1, dim, metric, n);
+    if (payload_floats > 0) {
+        out.write(reinterpret_cast<const char*>(payload),
+                  static_cast<std::streamsize>(payload_floats * sizeof(float)));
+    }
 }
 
 }  // namespace
@@ -138,5 +154,54 @@ TEST_CASE("load rejects truncated payload after valid header", "[serialization]"
     }
     FlatIndex index(2, "l2");
     REQUIRE_THROWS_AS(index.load(path.string()), std::runtime_error);
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("load rejects NaN payload", "[serialization][validation]") {
+    const std::filesystem::path path = temp_file("vectorforge_nan_payload.bin");
+    const float payload[] = {1.0f, std::numeric_limits<float>::quiet_NaN()};
+    write_vf01_payload(path, 2, 0, 1, payload, 2);
+    FlatIndex index(2, "l2");
+    REQUIRE_THROWS_AS(index.load(path.string()), std::invalid_argument);
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("load rejects +Inf payload", "[serialization][validation]") {
+    const std::filesystem::path path = temp_file("vectorforge_pos_inf_payload.bin");
+    const float payload[] = {0.0f, std::numeric_limits<float>::infinity()};
+    write_vf01_payload(path, 2, 1, 1, payload, 2);
+    FlatIndex index(2, "cosine");
+    REQUIRE_THROWS_AS(index.load(path.string()), std::invalid_argument);
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("load rejects -Inf payload", "[serialization][validation]") {
+    const std::filesystem::path path = temp_file("vectorforge_neg_inf_payload.bin");
+    const float payload[] = {-std::numeric_limits<float>::infinity(), 1.0f};
+    write_vf01_payload(path, 2, 0, 1, payload, 2);
+    FlatIndex index(2, "l2");
+    REQUIRE_THROWS_AS(index.load(path.string()), std::invalid_argument);
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("failed load preserves existing index state", "[serialization][safety]") {
+    FlatIndex index(2, "l2");
+    const float data[] = {0.0f, 0.0f, 3.0f, 4.0f};
+    index.add(data, 2);
+    const float query[] = {0.0f, 0.0f};
+    const auto before = index.search(query, 2);
+
+    const std::filesystem::path path = temp_file("vectorforge_corrupt_load.bin");
+    const float payload[] = {1.0f, std::numeric_limits<float>::quiet_NaN()};
+    write_vf01_payload(path, 2, 1, 1, payload, 2);
+    REQUIRE_THROWS_AS(index.load(path.string()), std::invalid_argument);
+
+    REQUIRE(index.dim() == 2);
+    REQUIRE(index.metric() == vectorforge::Metric::L2);
+    REQUIRE(index.size() == 2);
+    const auto after = index.search(query, 2);
+    REQUIRE(after.ids == before.ids);
+    REQUIRE_THAT(after.distances[0], Catch::Matchers::WithinAbs(before.distances[0], 0.0f));
+    REQUIRE_THAT(after.distances[1], Catch::Matchers::WithinAbs(before.distances[1], 0.0f));
     std::filesystem::remove(path);
 }
