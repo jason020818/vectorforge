@@ -2,30 +2,32 @@
 
 Phase 3A fairness hardening validation.
 
-NON-OFFICIAL SMOKE RESULT only.
-
 ## Provenance
 
 - Base commit: `9726efd19460774ef21681d9be69017f02731ead`
-- Validated source tree: local fairness-hardening working tree atop the base commit
-- Working-tree state during validation: dirty
-- Validation record commit: not created locally because Git author identity is not configured
+- Validated code/test commit: `af58538d6306bdb64d11bc4f00fdae0751321ec3`
+- Working tree during validation: clean
+- Verified dataset SHA256:
+  `c3a498239eea772b7b736f31c25f8dff089f349352ec523b0d9cb694c71f1df3`
 
 ## Environment
 
-- Python: `3.12.3`
 - OS: `Linux`
 - Kernel: `6.18.33.2-microsoft-standard-WSL2`
 - CPU: `Intel(R) Core(TM) i7-10700 CPU @ 2.90GHz`
+- Python: `3.12.3`
 - Faiss: `1.15.0`
 - hnswlib: `0.8.0`
 - USearch: `2.26.0`
 
-## Verification
+## Tests
 
-- `pytest`: `54 passed, 1 skipped`
-- Phase 3A benchmark-dependency tests: `24 passed`
-- `ruff check python tests/python eval benchmarks`: `PASS`
+- C++ Release: `75/75 passed`
+- C++ Debug + ASan/UBSan: `75/75 passed`
+- Python `.[dev]` clean environment: `47 passed, 3 skipped`
+- Benchmark `.[bench]` integration: `27 passed`
+- Ruff: `PASS`
+- clang-format: `PASS`
 
 ## Smoke Configuration
 
@@ -41,7 +43,7 @@ NON-OFFICIAL SMOKE RESULT only.
 - Repeat: `3`
 - Ground truth source: `flatindex-exact-subprocess`
 - Ground truth artifact:
-  `benchmarks/results/ccnews-nomic-768-normalized-20260818T090245Z/ground_truth.npy`
+  `benchmarks/results/ccnews-nomic-768-normalized-20260818T092218Z/ground_truth.npy`
 
 ## Smoke Results
 
@@ -54,4 +56,10 @@ NON-OFFICIAL SMOKE RESULT
 
 Results directory:
 
-`benchmarks/results/ccnews-nomic-768-normalized-20260818T090245Z`
+`benchmarks/results/ccnews-nomic-768-normalized-20260818T092218Z`
+
+## Status
+
+PHASE 3A STATUS: COMPLETE
+
+READY FOR PHASE 3B: YES
