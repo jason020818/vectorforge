@@ -5,6 +5,7 @@
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <limits>
 #include <random>
 #include <set>
@@ -331,6 +332,90 @@ TEST_CASE("hnsw effective ef is at least k", "[hnsw]") {
     const auto f = flat.search(query.data(), 20);
     REQUIRE(h.ids.size() == 20);
     REQUIRE(h.ids == f.ids);
+}
+
+TEST_CASE("hnsw save/load continuation matches uninterrupted construction L2",
+          "[hnsw][deterministic][serialization]") {
+    const int dim = 8;
+    const std::size_t n_a = 50;
+    const std::size_t n_b = 30;
+    const auto all_data = fill_random(n_a + n_b, dim, 77);
+    const float* batch_a = all_data.data();
+    const float* batch_b = all_data.data() + n_a * static_cast<std::size_t>(dim);
+    const auto path =
+        std::filesystem::temp_directory_path() / "vectorforge_hnsw_continuation_l2.bin";
+
+    HNSWIndex continuous(dim, "l2", 8, 32, 16, 42);
+    continuous.add(batch_a, n_a);
+    continuous.add(batch_b, n_b);
+
+    HNSWIndex resumed(dim, "l2", 8, 32, 16, 42);
+    resumed.add(batch_a, n_a);
+    resumed.save(path.string());
+
+    HNSWIndex loaded(1, "cosine");
+    loaded.load(path.string());
+    loaded.add(batch_b, n_b);
+
+    REQUIRE(continuous.graph_digest() == loaded.graph_digest());
+    REQUIRE(continuous.max_level() == loaded.max_level());
+    REQUIRE(continuous.entry_point() == loaded.entry_point());
+    REQUIRE(continuous.size() == loaded.size());
+    for (std::size_t i = 0; i < n_a + n_b; ++i) {
+        const auto id = static_cast<idx_t>(i);
+        REQUIRE(continuous.node_level(id) == loaded.node_level(id));
+        for (int lc = 0; lc <= continuous.node_level(id); ++lc) {
+            REQUIRE(continuous.neighbors(id, lc) == loaded.neighbors(id, lc));
+        }
+    }
+
+    const auto queries = fill_random(5, dim, 99);
+    for (std::size_t q = 0; q < 5; ++q) {
+        const float* qp = queries.data() + q * static_cast<std::size_t>(dim);
+        const auto rc = continuous.search(qp, 10);
+        const auto rl = loaded.search(qp, 10);
+        REQUIRE(rc.ids == rl.ids);
+        REQUIRE(rc.distances == rl.distances);
+    }
+    std::filesystem::remove(path);
+}
+
+TEST_CASE("hnsw save/load continuation matches uninterrupted construction cosine",
+          "[hnsw][deterministic][serialization][cosine]") {
+    const int dim = 8;
+    const std::size_t n_a = 40;
+    const std::size_t n_b = 25;
+    const auto all_data = fill_random(n_a + n_b, dim, 88);
+    const float* batch_a = all_data.data();
+    const float* batch_b = all_data.data() + n_a * static_cast<std::size_t>(dim);
+    const auto path =
+        std::filesystem::temp_directory_path() / "vectorforge_hnsw_continuation_cos.bin";
+
+    HNSWIndex continuous(dim, "cosine", 8, 32, 16, 42);
+    continuous.add(batch_a, n_a);
+    continuous.add(batch_b, n_b);
+
+    HNSWIndex resumed(dim, "cosine", 8, 32, 16, 42);
+    resumed.add(batch_a, n_a);
+    resumed.save(path.string());
+
+    HNSWIndex loaded(1, "l2");
+    loaded.load(path.string());
+    loaded.add(batch_b, n_b);
+
+    REQUIRE(continuous.graph_digest() == loaded.graph_digest());
+    REQUIRE(continuous.max_level() == loaded.max_level());
+    REQUIRE(continuous.entry_point() == loaded.entry_point());
+
+    const auto queries = fill_random(5, dim, 100);
+    for (std::size_t q = 0; q < 5; ++q) {
+        const float* qp = queries.data() + q * static_cast<std::size_t>(dim);
+        const auto rc = continuous.search(qp, 10);
+        const auto rl = loaded.search(qp, 10);
+        REQUIRE(rc.ids == rl.ids);
+        REQUIRE(rc.distances == rl.distances);
+    }
+    std::filesystem::remove(path);
 }
 
 TEST_CASE("hnsw synthetic Recall@10 gate vs FlatIndex", "[hnsw][recall]") {

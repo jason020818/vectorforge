@@ -216,6 +216,23 @@ TEST_CASE("hnsw load rejects Inf vectors", "[hnsw][serialization][validation]") 
     std::filesystem::remove(path);
 }
 
+TEST_CASE("hnsw load rejects -Inf vectors", "[hnsw][serialization][validation]") {
+    const auto path = temp_file("vectorforge_hnsw_neg_inf.bin");
+    {
+        std::ofstream out(path, std::ios::binary);
+        write_vh01_header(out, 2, 0, 1, 4, 8, 8, 8, 42, 0, 0);
+        const float payload[] = {-std::numeric_limits<float>::infinity(), 1.0f};
+        out.write(reinterpret_cast<const char*>(payload), sizeof(payload));
+        const std::int32_t level = 0;
+        write_pod(out, level);
+        const std::uint32_t degree = 0;
+        write_pod(out, degree);
+    }
+    HNSWIndex index(2, "l2");
+    REQUIRE_THROWS_AS(index.load(path.string()), std::invalid_argument);
+    std::filesystem::remove(path);
+}
+
 TEST_CASE("hnsw load rejects impossible neighbor ids", "[hnsw][serialization]") {
     const auto path = temp_file("vectorforge_hnsw_bad_nb.bin");
     {
