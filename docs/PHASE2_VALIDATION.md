@@ -6,12 +6,13 @@ Not a competitor performance benchmark.
 ## Environment
 
 ```text
-commit:   8f1760ff3757da782b457f808b60cc66608637cd (base) + verification hardening
-date:     2026-08-18
-OS:       Linux 6.18.33.2-microsoft-standard-WSL2 x86_64
+Validated code/test commit: 3ec2ceb013264334483ffa43b94062d5a50e0cfb
+Working tree during validation: clean
+date: 2026-08-18
+OS: Linux 6.18.33.2-microsoft-standard-WSL2 x86_64
 compiler: g++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
-Python:   3.12.3
-CPU:      Intel Core i7-10700 @ 2.90GHz
+Python: 3.12.3
+CPU: Intel Core i7-10700 @ 2.90GHz
 ```
 
 ## HNSW configuration
@@ -65,17 +66,21 @@ ruff check python tests/python eval benchmarks  # All checks passed
 git ls-files '*.cpp' '*.hpp' | xargs clang-format --dry-run -Werror  # No errors
 ```
 
-## Test summary
+## Phase 2 Status
 
-| gate                              | result |
-|-----------------------------------|--------|
-| C++ Release (75 tests)            | PASS   |
-| C++ Debug + ASan/UBSan (75 tests) | PASS   |
-| Python tests (31 tests)           | PASS   |
-| FlatIndex regression              | PASS   |
-| L2 Recall@10 >= 0.90              | PASS   |
-| Cosine Recall@10 >= 0.90          | PASS   |
-| Save/load continuation determinism| PASS   |
-| VH01 NaN / +Inf / -Inf rejection  | PASS   |
-| Ruff                              | PASS   |
-| clang-format                      | PASS   |
+```text
+PHASE 2 STATUS: FROZEN
+
+Release tests: PASS
+Debug ASan/UBSan: PASS
+Python tests: PASS
+FlatIndex regression: PASS
+L2 Recall@10 gate: PASS
+Cosine Recall@10 gate: PASS
+Save/load continuation determinism: PASS
+VH01 non-finite validation: PASS
+Ruff: PASS
+clang-format: PASS
+
+READY FOR PHASE 3: YES
+```
