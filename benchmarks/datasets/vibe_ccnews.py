@@ -100,11 +100,11 @@ def _compute_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _verified_sha256(path: Path) -> str:
+def _verified_sha256(path: Path, *, force_rehash: bool = False) -> str:
     stat = path.stat()
     cache_path = _sha256_cache_path(path)
     cached: dict[str, object] | None = None
-    if cache_path.exists():
+    if not force_rehash and cache_path.exists():
         try:
             cached = json.loads(cache_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
@@ -216,7 +216,7 @@ def load_vibe_ccnews(
 ) -> VibeCcnewsDataset:
     dataset_dir = cache_dir or Path("benchmarks/datasets/cache")
     path = _hf_download(dataset_dir)
-    verified_sha256 = _verified_sha256(path)
+    verified_sha256 = _verified_sha256(path, force_rehash=official)
 
     (
         vectors,

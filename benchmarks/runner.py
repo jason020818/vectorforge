@@ -11,7 +11,6 @@ import time
 from pathlib import Path
 
 import numpy as np
-import psutil
 from vectorforge import FlatIndex
 
 from benchmarks.datasets import load_vibe_ccnews
@@ -27,6 +26,11 @@ from benchmarks.results import (
     median_repeat_value,
     recall_at_k,
 )
+
+try:
+    import psutil
+except ImportError:  # pragma: no cover - optional dependency path
+    psutil = None
 
 
 def load_dataset_for_run(name: str, *, limit: int | None, official: bool):
@@ -46,6 +50,14 @@ def exact_ground_truth(vectors: np.ndarray, queries: np.ndarray, metric: str, k:
     index.add(np.ascontiguousarray(vectors, dtype=np.float32))
     ids, _ = index.search(np.ascontiguousarray(queries, dtype=np.float32), k=k)
     return np.asarray(ids, dtype=np.int64)
+
+
+def _require_psutil():
+    if psutil is None:
+        raise RuntimeError(
+            "psutil is required for benchmark RSS measurement; install with .[bench]"
+        )
+    return psutil
 
 
 def benchmark_engine(
@@ -104,7 +116,7 @@ def benchmark_engine(
         ef_search=ef_search,
         threads=threads,
     )
-    proc = psutil.Process()
+    proc = _require_psutil().Process()
     baseline_rss = proc.memory_info().rss
     t0 = time.perf_counter()
     adapter.build(vectors, config)

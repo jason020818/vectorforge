@@ -127,4 +127,21 @@ def test_worker_environment_is_set_before_subprocess_start(
 
 
 def test_package_version_reporting_uses_metadata() -> None:
-    assert package_version("hnswlib") != "unknown"
+    calls = []
+
+    def fake_version(name: str) -> str:
+        calls.append(name)
+        if name == "missing":
+            raise __import__("importlib").metadata.PackageNotFoundError(name)
+        if name == "present":
+            return "1.2.3"
+        raise AssertionError(f"unexpected package lookup: {name}")
+
+    monkeypatch = pytest.MonkeyPatch()
+    monkeypatch.setattr("benchmarks.engines.base.importlib.metadata.version", fake_version)
+    try:
+        assert package_version("missing", "present") == "1.2.3"
+        assert package_version("missing") == "unknown"
+    finally:
+        monkeypatch.undo()
+    assert calls == ["missing", "present", "missing"]

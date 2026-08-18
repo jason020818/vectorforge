@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from benchmarks.engines import BenchmarkAdapterConfig, create_engine
+from benchmarks.engines.base import package_version
 from benchmarks.results import recall_at_k
 
 
@@ -16,6 +17,10 @@ from benchmarks.results import recall_at_k
     reason="benchmark dependency integration job only",
 )
 def test_benchmark_dependency_integration() -> None:
+    assert package_version("faiss-cpu", "faiss") != "unknown"
+    assert package_version("hnswlib") != "unknown"
+    assert package_version("usearch") != "unknown"
+
     rng = np.random.default_rng(0)
     vectors = rng.standard_normal((64, 16), dtype=np.float32)
     queries = rng.standard_normal((8, 16), dtype=np.float32)

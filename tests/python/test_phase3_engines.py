@@ -158,8 +158,39 @@ def test_usearch_uses_explicit_f32_and_reports_parameters(monkeypatch: pytest.Mo
     assert params["thread_control_status"] == "explicit_threads_parameter"
 
 
-def test_faiss_reports_actual_parameters() -> None:
+def test_faiss_reports_actual_parameters(monkeypatch: pytest.MonkeyPatch) -> None:
+    class FakeHnsw:
+        efConstruction = 0
+        efSearch = 0
+
+    class FakeIndex:
+        def __init__(self, dim, M, metric):
+            self.dim = dim
+            self.M = M
+            self.metric_type = metric
+            self.hnsw = FakeHnsw()
+
+        def add(self, _vectors):
+            return None
+
+    class FakeModule:
+        METRIC_L2 = 1
+        METRIC_INNER_PRODUCT = 2
+
+        @staticmethod
+        def omp_set_num_threads(_threads):
+            return None
+
+        @staticmethod
+        def IndexHNSWFlat(dim, M, metric):
+            return FakeIndex(dim, M, metric)
+
+        @staticmethod
+        def normalize_L2(_vectors):
+            return None
+
     adapter = FaissHnswAdapter()
+    monkeypatch.setattr(adapter, "_require", lambda: FakeModule())
     config = BenchmarkAdapterConfig(8, "cosine", 16, 200, 100, 1)
     adapter.build(np.zeros((4, 8), dtype=np.float32), config)
     params = adapter.actual_parameters()
